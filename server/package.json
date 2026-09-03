@@ -1,0 +1,19 @@
+{
+  "name": "patch47-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "《第 47 号补丁》对话后端:规则版导演层 + LLM 调用 + 兜底台词",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "smoke": "bash test/smoke.sh",
+    "export-fallback": "node tools/export-fallback.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}

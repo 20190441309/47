@@ -7,6 +7,11 @@
 - 2026-09-03:M1 采纳建议,新增「WebGL 空包基线体积测试」——把首屏 ≤15MB 从假设变成实测数据(提前于 M4 验证)。
 - 2026-09-03:M1 灰盒 UI 暂用 legacy `UnityEngine.UI.Text`(编辑器内中文正常);**WebGL 下动态字体不可用,中文会变豆腐块**。M2 切换 TextMeshPro + 思源黑体 SDF 字体资产后再做 WebGL 中文验证。
 
+## 开发环境备忘(本机坑)
+
+- 本机 bash 为 **WSL2**,而 node 是 **Windows 侧 node.exe**:WSL 里的 curl 访问不到 Windows 回环(localhost 隔离),需用 `curl.exe`;`server/test/smoke.sh` 已内置该适配。
+- 本机 PowerShell 为 **5.1**:`Invoke-RestMethod` 的字符串请求体按 ISO-8859-1 发送,中文静默变乱码。**测中文接口一律用 node fetch(临时脚本)或 curl.exe + 文件体**,不要用 Invoke-RestMethod。
+
 ## 遗留问题 / 临时方案
 
 - 剧情阶段推进 M1 为「对话驱动」(玩家提到按钮/修复即切阶段);M2 计划接入游戏事件(谜题完成)驱动阶段切换——涉及新增接口,按 AGENTS.md 要求需先改接口契约再实现。
