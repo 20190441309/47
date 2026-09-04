@@ -1,0 +1,32 @@
+// ===== Syncthing 忽略规则（两机实时同步层）=====
+// git 已覆盖版本化文件；这里只排除每台机器各自重建的缓存/产物
+// 注意：此文件随 git 走，改这里两台机器都会生效
+
+// ===== 依赖（每台机器各自 npm install 重建）=====
+/node_modules
+/server/node_modules
+
+// ===== Unity 工程缓存（每台机器各自重导入）=====
+unity/Library
+unity/Temp
+unity/Obj
+unity/Build
+unity/Builds
+unity/Logs
+unity/UserSettings
+unity/MemoryCaptures
+unity/Recordings
+unity/.utmp
+
+// ===== Codely 智能体本地配置 =====
+.codely-cli
+
+// ===== 构建产物 =====
+**/dist
+**/*.br
+**/*.gz
+**/*.log
+
+// ===== 系统垃圾 =====
+**/Thumbs.db
+**/desktop.ini

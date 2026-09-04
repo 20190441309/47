@@ -95,6 +95,7 @@ rmdir /s /q unity_new
 | Windows PowerShell 5.1 `Invoke-RestMethod` 中文请求体静默乱码 | 测中文接口用 node fetch 或 curl.exe + 文件体 |
 | legacy `Text` 在 WebGL 下中文变豆腐块 | 已知问题,M2 换 TextMeshPro + 思源黑体 SDF(见 design-notes) |
 | 装成了国际版 Unity Hub | 卸载,改装国内版团结 Hub |
+| SyncTrayzor 捆绑 syncthing 首启自升级到 v2,陷入 `unknown flag -n` 报错死循环 | 首启前先 `setx STNOUPGRADE 1`,再把 `data\syncthing.exe` 换成 v1.30.0(见 §9.1) |
 
 ## 8. 每次收工
 
@@ -105,3 +106,37 @@ git push                     # 多机器开发,必须保持 GitHub 同步
 ```
 
 并在 `docs/ai-usage-log.md` 追加一行会话记录(Codely+ 赛道申报证据,不许漏)。
+
+## 9. 两机实时同步(Syncthing,装一次,推荐)
+
+> git/GitHub 仍是唯一真源;Syncthing 负责把**未提交的改动、`server/.env`、`server/data/`** 等不进 git 的内容在两台机器间实时对齐,忘记 push 不再致命。
+> 第二台机器的完整分步操作手册见 `docs/syncthing-setup.md`(含笔记本设备 ID 与排障表)。
+
+### 9.1 安装(每台机器,一次性,**顺序不能乱**)
+
+> 坑:SyncTrayzor v1.1.29 捆绑的 syncthing 是 2021 年的 v1.18.1,首次启动会自动升级到 v2.x,而 v2 命令行接口与 SyncTrayzor 不兼容,陷入 `unknown flag -n` 报错死循环(主机 2026-09-04 实测踩过)。必须**先禁升级、再换 v1 系列最后版二进制**。
+
+1. 从 GitHub `canton7/SyncTrayzor` releases 下载 `SyncTrayzorPortable-x64.zip`(v1.1.29),解压到 `D:\program\SyncTrayzor`(绿色版,无需安装器)
+2. **首次运行前**,PowerShell 执行 `setx STNOUPGRADE 1`(禁用 syncthing 自动升级,防跳 v2)
+3. 运行 `SyncTrayzor.exe` 过向导,防火墙弹窗一律点"允许访问",然后完全退出(托盘右键 → 退出)
+4. 从 GitHub `syncthing/syncthing` releases 下载 `syncthing-windows-amd64-v1.30.0.zip`,用其中的 `syncthing.exe` 覆盖 `D:\program\SyncTrayzor\data\syncthing.exe`
+5. 重开 SyncTrayzor,日志(操作 → 显示日志)应显示 `syncthing v1.30.0` 且无报错
+6. 建议在 SyncTrayzor 设置里开启"开机自启";**永远别删 `STNOUPGRADE` 环境变量、别升级 syncthing 到 v2**
+
+### 9.2 两台配对(一次性)
+
+1. **配对前先对齐**:两台都 `git add -A` + commit + push + pull,保证工作树一致,首次同步才不会打架
+2. 两边 SyncTrayzor → 操作 → 显示 ID,互相把对方设备 ID 添加进"设备"
+3. 添加文件夹 `D:\hki\patch-47`,共享给对方设备,两边都是"发送并接收"
+4. 笔记本接受共享时,路径指向自己已 clone 好的 `D:\hki\patch-47`
+5. 文件夹 → 版本控制 → **回收站式,保留 7 天**(防误删扩散)
+
+`.stignore`(忽略 node_modules / unity 缓存 / .codely-cli 等)已入库随 git 走,无需手配,别删。
+
+### 9.3 使用纪律(3 条,违反会丢东西)
+
+1. **永远不要两台同时编辑**同一文件。极端冲突时 Syncthing 生成 `.sync-conflict-*` 副本而不是覆盖,能救但很烦
+2. **开工前看一眼托盘图标**,绿色(最新)再动手;回家开主机后等它变绿再写
+3. **到里程碑照常 push GitHub**——笔记本出门丢了/摔了,GitHub 是唯一异地副本;公网中继偶尔抽风,git 是兜底
+
+> 出门场景:笔记本的改动先攒着本地,两台同时在线时自动对齐(含公网中继,速度慢但够代码文件用)。若中继连不通,两台装 Tailscale 组虚拟局域网解决。
