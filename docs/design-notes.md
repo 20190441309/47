@@ -14,9 +14,11 @@
 
 ## 遗留问题 / 临时方案
 
+- **2026-09-04 跨机器交接**:`tuanjie.exe install-modules 1.10.2 --list/--module` 在旧机器报 `undefined is not an object`(CLI bug),WebGL 模块未装上;新机器需在 Hub **图形界面**给 1.10.2 勾选 WebGL Build Support。工程创建与灰盒场景生成步骤见 `unity/README.md`。
 - 剧情阶段推进 M1 为「对话驱动」(玩家提到按钮/修复即切阶段);M2 计划接入游戏事件(谜题完成)驱动阶段切换——涉及新增接口,按 AGENTS.md 要求需先改接口契约再实现。
 - 客户端存档 M1 只存 sessionId + stage + trust + 设置;flags/memory 由服务端持久化(每 5 分钟落盘)。M2 评估是否把 flags 同步进客户端存档(防服务端数据丢失)。
-- 兜底台词单一数据源:以 `server/src/stages.js` 为准,`server/tools/export-fallback.js` 导出到 `unity/Assets/Resources/Dialogue/Fallback/`,改台词后需重跑导出。
+- 客户端一旦进入离线兜底就不再重试后端(M1 简化);M2 加"手动重连"入口。
+- 兜底台词单一数据源:以 `server/src/stages.js` 为准,`server/tools/export-fallback.js` 导出到 `unity/Assets/Resources/Dialogue/Fallback/`,改台词后需重跑导出(生成物不进 git)。
 
 ## 「不实现」清单(范围控制缓冲区)
 
