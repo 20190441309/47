@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace Patch47.Patch
@@ -89,28 +88,6 @@ namespace Patch47.Patch
             wire.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
             wire.sizeDelta = new Vector2(delta.magnitude, 8f);
             wire.localPosition = (from + to) * 0.5f;
-        }
-    }
-
-    /// 端点拖拽:挂在 terminal 上,把指针/触摸事件转交给 PatchBoard。
-    /// 与 PatchBoard 同文件,仅由场景构建器 AddComponent 注入(不进 Inspector 拖拽)。
-    public class PatchWireDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
-    {
-        public PatchBoard board;
-
-        public void OnBeginDrag(PointerEventData eventData)
-        {
-            if (board != null) board.BeginWire();
-        }
-
-        public void OnDrag(PointerEventData eventData)
-        {
-            if (board != null) board.DragWire(eventData.position);
-        }
-
-        public void OnEndDrag(PointerEventData eventData)
-        {
-            if (board != null) board.EndWire(eventData.position);
         }
     }
 }

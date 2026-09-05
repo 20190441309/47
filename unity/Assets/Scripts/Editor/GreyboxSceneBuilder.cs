@@ -273,7 +273,7 @@ namespace Patch47.EditorTools
             compRect.anchoredPosition = new Vector2(64f, 110f);
             compRect.sizeDelta = new Vector2(360f, 44f);
 
-            // 左端点:SendSignal(可拖拽出线)
+            // 左端点:SendSignal(可拖拽出线,圆点把手)
             var terminalGo = new GameObject("Terminal", typeof(RectTransform), typeof(Image));
             var terminalRect = (RectTransform)terminalGo.transform;
             terminalRect.SetParent(boardRect, false);
@@ -281,7 +281,9 @@ namespace Patch47.EditorTools
             terminalRect.pivot = new Vector2(0.5f, 0.5f);
             terminalRect.anchoredPosition = new Vector2(170f, -20f);
             terminalRect.sizeDelta = new Vector2(72f, 72f);
-            terminalGo.GetComponent<Image>().color = PatchBlue;
+            var terminalImage = terminalGo.GetComponent<Image>();
+            terminalImage.color = PatchBlue;
+            terminalImage.sprite = MakeCircleSprite();
 
             var terminalLabel = MakeText(boardRect, "TerminalLabel", "SendSignal", 26, PatchBlue, TextAnchor.MiddleCenter);
             var terminalLabelRect = (RectTransform)terminalLabel.transform;
@@ -400,6 +402,36 @@ namespace Patch47.EditorTools
             ApplyColor(material, color);
             AssetDatabase.CreateAsset(material, path);
             return material;
+        }
+
+        /// 端点圆点贴图:64×64 软边白圆(由 Image.color 染色),存 Assets/Art/terminal-dot.png。
+        /// 纯代码生成,不引入第三方素材(无需登记授权)。文件 IO 用绝对路径(不依赖进程工作目录)。
+        private static Sprite MakeCircleSprite()
+        {
+            const string assetPath = "Assets/Art/terminal-dot.png";
+            var absolutePath = Path.Combine(Directory.GetParent(Application.dataPath).FullName,
+                "Assets", "Art", "terminal-dot.png");
+            if (!File.Exists(absolutePath))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(absolutePath));
+                const int size = 64;
+                var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+                var center = Vector2.one * (size - 1) * 0.5f;
+                for (var y = 0; y < size; y++)
+                for (var x = 0; x < size; x++)
+                {
+                    var alpha = Mathf.Clamp01((size * 0.5f - Vector2.Distance(new Vector2(x, y), center)) / 1.5f);
+                    tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+                tex.Apply();
+                File.WriteAllBytes(absolutePath, tex.EncodeToPNG());
+            }
+            AssetDatabase.ImportAsset(assetPath);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(assetPath);
+            importer.textureType = TextureImporterType.Sprite;
+            importer.mipmapEnabled = false;
+            importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
         }
 
         private static void ApplyColor(Material material, Color color)
