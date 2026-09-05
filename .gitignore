@@ -21,6 +21,18 @@ unity/MemoryCaptures/
 unity/Recordings/
 unity/.utmp/
 
+# Unity IDE 生成文件(编辑器自动产出,不入库)
+unity/*.csproj
+unity/*.sln
+unity/.vsconfig
+
+# 兜底台词导出生成物(以 server/src/stages.js 为单一数据源,重跑 export-fallback 再生)
+unity/Assets/Resources/Dialogue/
+unity/Assets/Resources/Dialogue.meta
+
+# Codely 会话临时目录(剪贴板图片等)
+.codely/
+
 # ===== 构建产物 =====
 dist/
 *.br

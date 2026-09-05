@@ -1,3 +1,4 @@
+using System.Collections;
 using Patch47.GameFramework;
 using Patch47.Patch;
 using Patch47.UI;
@@ -49,6 +50,10 @@ namespace Patch47.Dialogue
         private void OnSessionFailed(string error)
         {
             EnterOffline($"session: {error}");
+            // 离线开局也要能玩:兜底开场白 + 快捷回复 + 解锁输入(AGENTS.md 4.1 离线兜底)
+            RefreshQuickReplies();
+            SetInteractable(true);
+            ShowReply(FallbackDialogue.NextReply(stage), "neutral");
         }
 
         public void OnSend()
