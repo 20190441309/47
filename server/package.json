@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/index.js",
     "smoke": "bash test/smoke.sh",
+    "oob-test": "node test/oob-test.js",
     "export-fallback": "node tools/export-fallback.js"
   },
   "engines": {

@@ -1,16 +1,18 @@
+using Patch47.Dialogue;
 using UnityEngine;
 
 namespace Patch47.Patch
 {
     /// 场景里的 bug 物体(AGENTS.md 4.3):未修复 = 红色警示脉冲,点击打开补丁台;
-    /// 修复成功 = 换实体绿 + 「✓ Patched」贴纸 + 一声轻响(代码合成,无外部音频素材)。
-    /// M1 阶段推进走对话驱动,修复不调用后端新接口(见 docs/design-notes.md)。
+    /// 修复成功 = 换实体绿 + 「✓ Patched」贴纸 + 一声轻响(代码合成,无外部音频素材),
+    /// 并通知 DialogueManager 上报 /api/event(bug_fixed)驱动阶段推进(M2 契约)。
     public class PatchBug : MonoBehaviour
     {
         [Header("引用(灰盒场景构建器注入)")]
         public Renderer bugRenderer;
         public Material fixedMaterial;
         public PatchBoard board;
+        public DialogueManager dialogue;
 
         [Range(0.5f, 6f)] public float pulseFrequency = 2.2f;
 
@@ -42,6 +44,8 @@ namespace Patch47.Patch
             if (bugRenderer != null && fixedMaterial != null) bugRenderer.sharedMaterial = fixedMaterial;
             SpawnSticker();
             AudioSource.PlayClipAtPoint(GetDing(), transform.position);
+            // 真实修复事件 → 后端推进阶段(trust/存档由 DialogueManager 统一结算)
+            if (dialogue != null) dialogue.OnBugFixed(gameObject.name);
         }
 
         private void SpawnSticker()

@@ -25,6 +25,7 @@ function createSession() {
     summarized: '',   // 滚动摘要(每行一条旧对话的压缩)
     facts: {},        // 关键事实表 { [key]: 描述 }
     ruleState: {},    // 导演层 trust 规则的冷却/一次性标记
+    fixedBugs: {},    // 已修复 bug 登记(/api/event 幂等用)
     counters: { recentChatTs: [] }, // 限流用滑动窗口
   };
   sessions.set(session.id, session);

@@ -29,7 +29,7 @@ WebGL 基线体积测试(M1 加项,需 WebGL 模块):
 
 | 目录 | 内容 |
 |---|---|
-| GameFramework/ | GameConfig(配置)、ApiModels(接口 DTO)、ApiClient(/api/session、/api/chat,超时 8s 走兜底) |
+| GameFramework/ | GameConfig(配置)、ApiModels(接口 DTO)、ApiClient(/api/session 新建+恢复、/api/chat、/api/event,超时 8s 走兜底)、SaveManager(单存档位,自动存/读 persistentDataPath) |
 | Dialogue/ | DialogueManager(编排)、Typewriter(本地打字机)、FallbackDialogue(离线兜底台词,Resources 加载) |
 | Patch/ | PatchAvatar(方块+闪烁光标,情绪→颜色/频率)、PatchBug(bug 物体:红光脉冲/点击开补丁台/修复反馈)、PatchBoard+PatchWireDrag(补丁台「接线」谜题交互) |
 | UI/ | QuickReplyRow(3 个快捷回复按钮) |

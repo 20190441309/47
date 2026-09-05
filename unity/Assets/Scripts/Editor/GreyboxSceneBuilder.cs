@@ -194,21 +194,22 @@ namespace Patch47.EditorTools
             stageRect.anchoredPosition = new Vector2(24f, -24f);
             stageRect.sizeDelta = new Vector2(720f, 48f);
 
-            // 离线指示(右上角,兜底激活)
-            var offlineGo = new GameObject("OfflineIndicator", typeof(RectTransform), typeof(Text));
+            // 离线指示(右上角,兜底激活;M2:可点击重连)
+            var offlineGo = new GameObject("OfflineIndicator", typeof(RectTransform), typeof(Text), typeof(Button));
             var offlineRect = (RectTransform)offlineGo.transform;
             offlineRect.SetParent(canvasGo.transform, false);
             offlineRect.anchorMin = new Vector2(1f, 1f);
             offlineRect.anchorMax = new Vector2(1f, 1f);
             offlineRect.pivot = new Vector2(1f, 1f);
             offlineRect.anchoredPosition = new Vector2(-24f, -24f);
-            offlineRect.sizeDelta = new Vector2(360f, 48f);
+            offlineRect.sizeDelta = new Vector2(420f, 48f);
             var offlineText = offlineGo.GetComponent<Text>();
             offlineText.font = UiFont;
             offlineText.fontSize = 30;
             offlineText.color = Warn;
             offlineText.alignment = TextAnchor.UpperRight;
-            offlineText.text = "离线模式";
+            offlineText.raycastTarget = true; // Text 即点击热区(灰盒偷懒,美术阶段换按钮皮肤)
+            offlineText.text = "离线 · 点此重连";
             offlineGo.SetActive(false);
 
             // ---- 编排器 ----
@@ -223,8 +224,10 @@ namespace Patch47.EditorTools
             manager.offlineIndicator = offlineGo;
 
             send.onClick.AddListener(manager.OnSend);
+            offlineGo.GetComponent<Button>().onClick.AddListener(manager.OnReconnect); // 手动重连(M2)
             quickReplyRow.Bind();
             quickReplyRow.Clicked += manager.OnQuickReply;
+            bugController.dialogue = manager; // 修复事件 → 对话编排器上报 /api/event
 
             var board = BuildPatchBoard(canvasGo.transform);
             bugController.board = board;

@@ -16,6 +16,11 @@ const RATE_WINDOW_MS = 10 * 1000; // 单会话限流:10 秒内 ≤3 次
 const RATE_MAX = 3;
 const TIRED_LINE = '帕奇有点累了,稍后再聊。';
 
+// flags 键值对 → 数组序列化(契约 2026-09-05:Unity JsonUtility 不支持动态键对象)
+function flagsToArray(flags) {
+  return Object.entries(flags || {}).map(([name, value]) => ({ name, value }));
+}
+
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '16kb' }));
@@ -35,12 +40,51 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/session', (_req, res) => {
+app.post('/api/session', (req, res) => {
+  const { resumeSessionId } = req.body || {};
+  if (typeof resumeSessionId === 'string' && resumeSessionId) {
+    // 恢复既有会话(客户端重启后凭存档里的 sessionId 重连,记忆/进度在服务端)
+    const session = memory.getSession(resumeSessionId);
+    if (!session) return res.status(404).json({ error: 'session_not_found' });
+    return res.status(201).json({
+      sessionId: session.id,
+      state: {
+        stage: session.stage,
+        trust: session.trust,
+        flags: flagsToArray(session.flags),
+      },
+    });
+  }
   const session = memory.createSession();
   res.status(201).json({
     sessionId: session.id,
-    state: { stage: session.stage, trust: session.trust, flags: session.flags },
+    state: { stage: session.stage, trust: session.trust, flags: flagsToArray(session.flags) },
   });
+});
+
+// 游戏事件(AGENTS.md 第 5 节):谜题完成等真实游戏事件驱动阶段推进——
+// 对话说"修好了"不算数,只有补丁台真实修复才推进,防刷阶段。
+app.post('/api/event', (req, res) => {
+  try {
+    const { sessionId, type, bugId } = req.body || {};
+    if (typeof sessionId !== 'string' || typeof type !== 'string' || !type) {
+      return res.status(400).json({ error: 'bad_request' });
+    }
+    const session = memory.getSession(sessionId);
+    if (!session) return res.status(404).json({ error: 'session_not_found' });
+    if (type !== 'bug_fixed') return res.status(400).json({ error: 'unknown_event_type' });
+
+    const { flagsChanged } = director.applyGameEvent(session, type, typeof bugId === 'string' ? bugId : undefined);
+    memory.persistAll(); // 修复即进度,立即落盘(不等 5 分钟周期)
+    res.json({
+      stage: session.stage,
+      trust: session.trust,
+      flagsChanged,
+    });
+  } catch (err) {
+    console.error('[event] internal error:', err);
+    res.status(500).json({ error: 'internal' });
+  }
 });
 
 app.post('/api/chat', async (req, res) => {

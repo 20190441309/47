@@ -7,6 +7,7 @@
 - 2026-09-03:M1 采纳建议,新增「WebGL 空包基线体积测试」——把首屏 ≤15MB 从假设变成实测数据(提前于 M4 验证)。
 - 2026-09-03:M1 灰盒 UI 暂用 legacy `UnityEngine.UI.Text`(编辑器内中文正常);**WebGL 下动态字体不可用,中文会变豆腐块**。M2 切换 TextMeshPro + 思源黑体 SDF 字体资产后再做 WebGL 中文验证。
 - 2026-09-05:**WebGL 基线体积实测完成**(E:\hki\47 机,当前灰盒场景含补丁台,批处理两次复现一致):总量 **5.35 MB**(Brotli;其中 wasm 4.23MB、data 1.01MB)——首屏 ≤15MB 预算余量约 3 倍,后续美术/音频资产空间充足。另:同代码重跑走 Library/Bee 增量缓存,秒级完成。
+- 2026-09-05:**M2 首批(事件驱动+存档)落地**:接口契约变更(session 恢复 / /api/event / flags 改数组,JsonUtility 不支持动态键);ch1_puzzle→ch1_done 纯事件驱动,事件按 bugId 幂等(重复修复不再 +5 信任);越界 20 条自动化测试落地,暴露 3 处正则漏网并修复(叠用限定词、动词与宾语间隔、关键词缺口)。WebGL 中文字体(TextMeshPro+思源黑体)仍是 M2 待办。
 
 ## 开发环境备忘(本机坑)
 
@@ -16,9 +17,9 @@
 ## 遗留问题 / 临时方案
 
 - ~~2026-09-04 跨机器交接:WebGL 模块未装上~~ → 2026-09-05 已解决:E:\hki\47 机已装 WebGL Build Support(顺带已装 WeixinMiniGameSupport,M4 可用),基线体积测试已跑通;旧机器若重建环境仍需在 Hub **图形界面**给 1.10.2 勾选 WebGL Build Support(CLI `install-modules` 有 bug)。工程创建与灰盒场景生成步骤见 `unity/README.md`。
-- 剧情阶段推进 M1 为「对话驱动」(玩家提到按钮/修复即切阶段);M2 计划接入游戏事件(谜题完成)驱动阶段切换——涉及新增接口,按 AGENTS.md 要求需先改接口契约再实现。
-- 客户端存档 M1 只存 sessionId + stage + trust + 设置;flags/memory 由服务端持久化(每 5 分钟落盘)。M2 评估是否把 flags 同步进客户端存档(防服务端数据丢失)。
-- 客户端一旦进入离线兜底就不再重试后端(M1 简化);M2 加"手动重连"入口。
+- ~~剧情阶段推进 M1 为「对话驱动」~~ → 2026-09-05 M2 已改双轨:对话驱动仅负责 ch1_arrival→ch1_puzzle(引话题);谜题完成节点一律走 `POST /api/event`(bug_fixed),对话说"修好了"不算,事件按 bugId 幂等防刷。契约见 AGENTS.md 第 5 节。
+- ~~客户端存档 M1 只存 sessionId+stage+trust~~ → 2026-09-05 M2 已加 SaveManager(persistentDataPath/save.json:sessionId/stage/trust/flags);启动凭 resumeSessionId 恢复,服务端会话丢失(404)则新建会话继续(对话记忆重开,比赛量级可接受)。memory 摘要仍在服务端,不复制进客户端存档。
+- ~~客户端进入离线兜底后不再重试~~ → 2026-09-05 M2 已加手动重连:右上角「离线 · 点此重连」,点击先试恢复 sessionId,丢失则新建。
 - 兜底台词单一数据源:以 `server/src/stages.js` 为准,`server/tools/export-fallback.js` 导出到 `unity/Assets/Resources/Dialogue/Fallback/`,改台词后需重跑导出(生成物不进 git)。
 
 ## 「不实现」清单(范围控制缓冲区)

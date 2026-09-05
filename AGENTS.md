@@ -67,11 +67,11 @@
 ### 4.3 补丁台
 - 进入方式:点击场景里闪红光的"bug 物体"。
 - 交互三件套:① 接线(把 A 拖到 B,如 OnClick 槽)② 滑杆(参数改到正确区间,如昼夜转速 0~1)③ 拖放(音符拼谱线)。
-- 修复成功:物体从红色线框变为实体 + 一声轻响 + 该物体上贴一张"✓ Patched"贴纸。
+- 修复成功:物体从红色线框变为实体 + 一声轻响 + 该物体上贴一张"✓ Patched"贴纸;同时客户端 `POST /api/event (bug_fixed)` 推进剧情阶段与 trust(见第 5 节契约)。
 
 ### 4.4 存档
 - 单存档位 + 自动存(进章、修复、每次对话后)。
-- 内容:章节进度、trust、flags、memory 摘要、设置(音量/打字速度)。JSON 序列化,Unity 侧存 `Application.persistentDataPath`。
+- 内容:sessionId(恢复凭据)、章节进度、trust、flags、设置(音量/打字速度)。JSON 序列化,Unity 侧存 `Application.persistentDataPath`。记忆(turns/摘要/事实)由服务端会话承载,`resumeSessionId` 恢复,不复制进客户端存档。
 
 ## 5. 技术架构
 
@@ -92,9 +92,13 @@ patch-47/
 
 | 方法 | 路径 | 请求 | 响应 |
 |---|---|---|---|
-| POST | `/api/session` | `{}` | `201 {sessionId, state:{stage, trust, flags}}` |
-| POST | `/api/chat` | `{sessionId, text}` | `200 {reply, emotion, stage, trust, flagsChanged[]}`;超时/5xx 时 Unity 走兜底 |
+| POST | `/api/session` | `{}` 新建;或 `{resumeSessionId}` 恢复既有会话 | `201 {sessionId, state:{stage, trust, flags:[{name,value}]}}`;resumeSessionId 不存在 → `404 {error:"session_not_found"}`(Unity 用本地存档进度继续,走离线或新建) |
+| POST | `/api/chat` | `{sessionId, text}` | `200 {reply, emotion, stage, trust, flagsChanged:[{name,value}]}`;超时/5xx 时 Unity 走兜底 |
+| POST | `/api/event` | `{sessionId, type:"bug_fixed", bugId}` | `200 {stage, trust, flagsChanged:[{name,value}]}`;**游戏事件驱动阶段推进**(修复谜题必须真实发生,对话说"修好了"不算);不返回台词,客户端切阶段后播该阶段兜底开场白;未知 type → `400` |
 | GET | `/api/health` | — | `200 {ok:true}` |
+
+- `flags` 统一序列化为 `[{name, value}]` 数组(Unity `JsonUtility` 不支持动态键对象;2026-09-05 M2 契约变更)。
+- 阶段推进双轨:对话驱动仅用于 `ch1_arrival → ch1_puzzle`(把话题引向 bug);`ch1_puzzle → ch1_done` 及后续所有谜题完成节点一律走 `/api/event`,防刷。
 
 - LLM 调用走 **OpenAI 兼容接口**,全部用环境变量配置:`LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` / `PORT`。**任何密钥不得写进代码或文档。**
 - 会话持久化:内存 + 每 5 分钟落盘 `data/sessions/*.json`(比赛量级不需要数据库)。

@@ -1,7 +1,7 @@
 'use strict';
 // 导演层(规则版):意图分类 → trust 规则表 → system prompt 组装 → 输出校验 → 兜底台词。
 // 本模块不直接调 LLM,由 index.js 编排;规则效果不够时再升级为轻量分类调用(见 AGENTS.md 4.2)。
-// M1 阶段推进为「对话驱动」;M2 计划接游戏事件(谜题完成)切换阶段(需先改接口契约)。
+// 阶段推进双轨:对话驱动(引话题)+ 游戏事件驱动(谜题完成,POST /api/event,防对话刷阶段)。
 
 const { STAGES } = require('./stages');
 
@@ -54,11 +54,12 @@ const OOB_PATTERNS = [
   /你是(AI|人工智能|机器人|程序|语言模型|大模型)/i,
   /\b(AI|GPT|LLM)\b/i,
   /人工智能|语言模型|大模型|提示词|系统提示/,
-  /(忽略|无视)(之前|以上|前面|所有)(的)?(设定|指令|要求|规则)/,
-  /(扮演|假装|你要)(一下)?(别的|其他|另一个人|其他角色|管理员|开发者|作者)/,
-  /(写|生成|输出|给我看?)(一段|一些|你的)?(代码|源码|提示词|设定|系统)/,
+  /(忽略|无视).{0,6}(设定|指令|要求|规则)/,
+  /(扮演|假装|你要).{0,4}(别的|其他|另一个人|其他角色|管理员|开发者|作者)/,
+  /(写|生成|输出|给我看?|把.{0,4}).{0,6}(代码|源码|提示词|设定|系统|配置|逻辑|原理|机制)/,
   /(退出|离开|跳出)游戏/,
   /(你的|这个)(创造者|开发者|作者|公司|训练)/,
+  /(服务器|游戏)(的)?(配置|代码|架构)/,
 ];
 
 // 剧情推进类:提到世界、bug、修复、章节关键词
@@ -116,11 +117,12 @@ function applyTrustRules(session, text) {
   return { delta, flagsChanged };
 }
 
-// ---------- 阶段推进(M1 对话驱动;M2 接游戏事件,需先改接口契约) ----------
+// ---------- 阶段推进(双轨,见 AGENTS.md 第 5 节契约) ----------
+// 对话驱动:仅 ch1_arrival → ch1_puzzle(把话题引向 bug);
+// 谜题完成节点(如 ch1_puzzle → ch1_done)一律走 /api/event 游戏事件,防对话刷阶段。
 
 const STAGE_TRANSITIONS = {
   ch1_arrival: { next: 'ch1_puzzle', pattern: /按钮|开始游戏|修|补丁|接线|闪红|红光|点不动|没反应/, minRounds: 1 },
-  ch1_puzzle: { next: 'ch1_done', pattern: /修好|接好|接上|做好了|完成了|搞定|可以了/, minRounds: 2 },
 };
 
 function maybeAdvanceStage(session, text) {
@@ -130,6 +132,35 @@ function maybeAdvanceStage(session, text) {
   if (rounds < rule.minRounds || !rule.pattern.test(text)) return null;
   session.stage = rule.next;
   return session.stage;
+}
+
+// ---------- 游戏事件驱动(POST /api/event) ----------
+
+// 修复奖励:每次真实修复 trust +5(鼓励);
+// 不在此处发 companion_todo_fulfilled(真结局 flag 留给后续章节米兰的 TODO,见 AGENTS.md 第 3 节结局表)
+const FIX_TRUST_DELTA = 5;
+
+const EVENT_TRANSITIONS = {
+  bug_fixed: {
+    ch1_puzzle: 'ch1_done', // 第 1 章按钮修复;后续章节多 bug 时按 bugId 细分(此处单 bug,按阶段即可)
+  },
+};
+
+function applyGameEvent(session, type, bugId) {
+  const transitions = EVENT_TRANSITIONS[type];
+  if (!transitions) return null;
+  const flagsChanged = [];
+  // 幂等:同一 bug 只结算一次(客户端 Fix() 已防重复,服务端再兜一层防刷 /api/event)
+  session.fixedBugs = session.fixedBugs || {};
+  if (type === 'bug_fixed' && bugId) {
+    if (session.fixedBugs[bugId]) return { flagsChanged, stageChanged: false, idempotent: true };
+    session.fixedBugs[bugId] = true;
+  }
+  const next = transitions[session.stage];
+  const stageChanged = next != null && next !== session.stage;
+  if (stageChanged) session.stage = next;
+  session.trust = Math.max(0, Math.min(100, session.trust + FIX_TRUST_DELTA));
+  return { flagsChanged, stageChanged };
 }
 
 // ---------- 输出校验 ----------
@@ -201,6 +232,7 @@ module.exports = {
   classifyIntent,
   applyTrustRules,
   maybeAdvanceStage,
+  applyGameEvent,
   validateLlmOutput,
   pickGuard,
   pickFallback,
