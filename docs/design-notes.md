@@ -6,6 +6,7 @@
 
 - 2026-09-03:M1 采纳建议,新增「WebGL 空包基线体积测试」——把首屏 ≤15MB 从假设变成实测数据(提前于 M4 验证)。
 - 2026-09-03:M1 灰盒 UI 暂用 legacy `UnityEngine.UI.Text`(编辑器内中文正常);**WebGL 下动态字体不可用,中文会变豆腐块**。M2 切换 TextMeshPro + 思源黑体 SDF 字体资产后再做 WebGL 中文验证。
+- 2026-09-05:**WebGL 基线体积实测完成**(E:\hki\47 机,当前灰盒场景含补丁台,批处理两次复现一致):总量 **5.35 MB**(Brotli;其中 wasm 4.23MB、data 1.01MB)——首屏 ≤15MB 预算余量约 3 倍,后续美术/音频资产空间充足。另:同代码重跑走 Library/Bee 增量缓存,秒级完成。
 
 ## 开发环境备忘(本机坑)
 
@@ -14,7 +15,7 @@
 
 ## 遗留问题 / 临时方案
 
-- **2026-09-04 跨机器交接**:`tuanjie.exe install-modules 1.10.2 --list/--module` 在旧机器报 `undefined is not an object`(CLI bug),WebGL 模块未装上;新机器需在 Hub **图形界面**给 1.10.2 勾选 WebGL Build Support。工程创建与灰盒场景生成步骤见 `unity/README.md`。
+- ~~2026-09-04 跨机器交接:WebGL 模块未装上~~ → 2026-09-05 已解决:E:\hki\47 机已装 WebGL Build Support(顺带已装 WeixinMiniGameSupport,M4 可用),基线体积测试已跑通;旧机器若重建环境仍需在 Hub **图形界面**给 1.10.2 勾选 WebGL Build Support(CLI `install-modules` 有 bug)。工程创建与灰盒场景生成步骤见 `unity/README.md`。
 - 剧情阶段推进 M1 为「对话驱动」(玩家提到按钮/修复即切阶段);M2 计划接入游戏事件(谜题完成)驱动阶段切换——涉及新增接口,按 AGENTS.md 要求需先改接口契约再实现。
 - 客户端存档 M1 只存 sessionId + stage + trust + 设置;flags/memory 由服务端持久化(每 5 分钟落盘)。M2 评估是否把 flags 同步进客户端存档(防服务端数据丢失)。
 - 客户端一旦进入离线兜底就不再重试后端(M1 简化);M2 加"手动重连"入口。
