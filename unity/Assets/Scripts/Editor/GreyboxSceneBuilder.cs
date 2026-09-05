@@ -88,14 +88,18 @@ namespace Patch47.EditorTools
             // 第一个 bug 物体:没绑 OnClick 的"开始游戏"按钮(红色线框示意)
             var bug = GameObject.CreatePrimitive(PrimitiveType.Cube);
             bug.name = "Bug_StartButton";
-            bug.transform.position = new Vector3(1.9f, 1.0f, 1.2f);
+            bug.transform.position = new Vector3(1.2f, 1.0f, 1.2f); // 竖屏 9:16 下半宽≈1.8,须留在画面内
             bug.transform.localScale = new Vector3(1.0f, 0.55f, 0.2f);
             bug.GetComponent<Renderer>().sharedMaterial = MakeMaterial("P47_BugRed", Warn);
 
-            BuildUi(avatar);
+            var bugController = bug.AddComponent<PatchBug>();
+            bugController.bugRenderer = bug.GetComponent<Renderer>();
+            bugController.fixedMaterial = MakeMaterial("P47_FixedGreen", FixGreen);
+
+            BuildUi(avatar, bugController);
         }
 
-        private static void BuildUi(PatchAvatar avatar)
+        private static void BuildUi(PatchAvatar avatar, PatchBug bugController)
         {
             var canvasGo = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGo.GetComponent<Canvas>();
@@ -103,7 +107,7 @@ namespace Patch47.EditorTools
             var scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080f, 1920f); // 手机竖屏优先
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.matchWidthOrHeight = 1f; // 按高度匹配:横屏下按宽度缩放会把 640 高的对话面板放大到盖住大半屏,挡住 3D 世界(bug/帕奇)
 
             new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
 
@@ -221,6 +225,124 @@ namespace Patch47.EditorTools
             send.onClick.AddListener(manager.OnSend);
             quickReplyRow.Bind();
             quickReplyRow.Clicked += manager.OnQuickReply;
+
+            var board = BuildPatchBoard(canvasGo.transform);
+            bugController.board = board;
+        }
+
+        /// 补丁台面板(默认隐藏;点 bug 物体弹出):接线谜题 UI(AGENTS.md 4.3)。
+        /// 根节点 = 全屏半透明遮罩(点空白处关闭),面板本体为其子物体(点面板不关闭)。
+        private static PatchBoard BuildPatchBoard(Transform canvas)
+        {
+            var rootGo = new GameObject("PatchBoard", typeof(RectTransform), typeof(Image), typeof(Button));
+            var rootRect = (RectTransform)rootGo.transform;
+            rootRect.SetParent(canvas, false);
+            rootRect.anchorMin = Vector2.zero;
+            rootRect.anchorMax = Vector2.one;
+            rootRect.offsetMin = rootRect.offsetMax = Vector2.zero;
+            rootGo.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.6f); // 压暗背景,突出面板
+
+            var boardGo = new GameObject("Panel", typeof(RectTransform), typeof(Image));
+            var boardRect = (RectTransform)boardGo.transform;
+            boardRect.SetParent(rootRect, false);
+            boardRect.anchorMin = boardRect.anchorMax = Vector2.one * 0.5f;
+            boardRect.sizeDelta = new Vector2(960f, 820f);
+            boardGo.GetComponent<Image>().color = FromRgb(0x1A, 0x1D, 0x23);
+
+            var title = MakeText(boardRect, "Title", "补丁台 · 把事件线接上", 40, Paper, TextAnchor.MiddleCenter);
+            var titleRect = (RectTransform)title.transform;
+            titleRect.anchorMin = new Vector2(0f, 1f);
+            titleRect.anchorMax = new Vector2(1f, 1f);
+            titleRect.pivot = new Vector2(0.5f, 1f);
+            titleRect.anchoredPosition = new Vector2(0f, -28f);
+            titleRect.sizeDelta = new Vector2(0f, 72f);
+
+            var hint = MakeText(boardRect, "Hint", "按住左侧 SendSignal 端点,拖到右侧 On Click() 空槽", 26,
+                FromRgb(0x8A, 0x90, 0x9A), TextAnchor.MiddleCenter);
+            var hintRect = (RectTransform)hint.transform;
+            hintRect.anchorMin = new Vector2(0f, 1f);
+            hintRect.anchorMax = new Vector2(1f, 1f);
+            hintRect.pivot = new Vector2(0.5f, 1f);
+            hintRect.anchoredPosition = new Vector2(0f, -110f);
+            hintRect.sizeDelta = new Vector2(0f, 48f);
+
+            var compLabel = MakeText(boardRect, "CompLabel", "组件:开始游戏按钮", 30, Paper, TextAnchor.MiddleLeft);
+            var compRect = (RectTransform)compLabel.transform;
+            compRect.anchorMin = compRect.anchorMax = new Vector2(0f, 0.5f);
+            compRect.pivot = new Vector2(0f, 0.5f);
+            compRect.anchoredPosition = new Vector2(64f, 110f);
+            compRect.sizeDelta = new Vector2(360f, 44f);
+
+            // 左端点:SendSignal(可拖拽出线)
+            var terminalGo = new GameObject("Terminal", typeof(RectTransform), typeof(Image));
+            var terminalRect = (RectTransform)terminalGo.transform;
+            terminalRect.SetParent(boardRect, false);
+            terminalRect.anchorMin = terminalRect.anchorMax = new Vector2(0f, 0.5f);
+            terminalRect.pivot = new Vector2(0.5f, 0.5f);
+            terminalRect.anchoredPosition = new Vector2(170f, -20f);
+            terminalRect.sizeDelta = new Vector2(72f, 72f);
+            terminalGo.GetComponent<Image>().color = PatchBlue;
+
+            var terminalLabel = MakeText(boardRect, "TerminalLabel", "SendSignal", 26, PatchBlue, TextAnchor.MiddleCenter);
+            var terminalLabelRect = (RectTransform)terminalLabel.transform;
+            terminalLabelRect.anchorMin = terminalLabelRect.anchorMax = new Vector2(0f, 0.5f);
+            terminalLabelRect.pivot = new Vector2(0.5f, 0.5f);
+            terminalLabelRect.anchoredPosition = new Vector2(170f, -90f);
+            terminalLabelRect.sizeDelta = new Vector2(300f, 40f);
+
+            var slotTitle = MakeText(boardRect, "SlotTitle", "事件:On Click()", 30, Paper, TextAnchor.MiddleRight);
+            var slotTitleRect = (RectTransform)slotTitle.transform;
+            slotTitleRect.anchorMin = slotTitleRect.anchorMax = new Vector2(1f, 0.5f);
+            slotTitleRect.pivot = new Vector2(1f, 0.5f);
+            slotTitleRect.anchoredPosition = new Vector2(-64f, 110f);
+            slotTitleRect.sizeDelta = new Vector2(360f, 44f);
+
+            // 右侧空槽:On Click()(接线目标)
+            var slotGo = new GameObject("Slot", typeof(RectTransform), typeof(Image));
+            var slotRect = (RectTransform)slotGo.transform;
+            slotRect.SetParent(boardRect, false);
+            slotRect.anchorMin = slotRect.anchorMax = new Vector2(1f, 0.5f);
+            slotRect.pivot = new Vector2(0.5f, 0.5f);
+            slotRect.anchoredPosition = new Vector2(-230f, -20f);
+            slotRect.sizeDelta = new Vector2(300f, 110f);
+            slotGo.GetComponent<Image>().color = FromRgb(0x24, 0x28, 0x33);
+
+            var slotLabel = MakeText(slotRect, "SlotLabel", "未绑定", 32, FromRgb(0x9A, 0xA0, 0xAA), TextAnchor.MiddleCenter);
+            StretchWithMargins((RectTransform)slotLabel.transform, 8f, 8f, 8f, 8f);
+
+            // 连线(拖拽时显示)
+            var wireGo = new GameObject("Wire", typeof(RectTransform), typeof(Image));
+            var wireRect = (RectTransform)wireGo.transform;
+            wireRect.SetParent(boardRect, false);
+            wireRect.anchorMin = wireRect.anchorMax = Vector2.one * 0.5f;
+            wireRect.pivot = new Vector2(0.5f, 0.5f);
+            wireRect.sizeDelta = new Vector2(0f, 10f);
+            var wireImage = wireGo.GetComponent<Image>();
+            wireImage.color = PatchBlue;
+            wireImage.raycastTarget = false;
+            wireGo.SetActive(false);
+
+            // 关闭按钮:贴面板右上角内侧
+            var close = MakeButton(boardRect, "CloseButton", "×");
+            var closeRect = (RectTransform)close.transform;
+            closeRect.anchorMin = closeRect.anchorMax = new Vector2(1f, 1f);
+            closeRect.pivot = new Vector2(0.5f, 0.5f);
+            closeRect.anchoredPosition = new Vector2(-92f, -92f);
+            closeRect.sizeDelta = new Vector2(120f, 120f);
+
+            var board = rootGo.AddComponent<PatchBoard>();
+            board.terminal = terminalRect;
+            board.slot = slotRect;
+            board.wire = wireRect;
+            board.slotLabel = slotLabel;
+            close.onClick.AddListener(board.Close);
+            rootGo.GetComponent<Button>().onClick.AddListener(board.Close); // 点遮罩空白处也关闭
+
+            var drag = terminalGo.AddComponent<PatchWireDrag>();
+            drag.board = board;
+
+            rootGo.SetActive(false);
+            return board;
         }
 
         // ---- 构建辅助 ----

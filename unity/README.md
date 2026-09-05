@@ -5,9 +5,9 @@
 
 ## 当前状态
 
-- `Assets/Scripts/` 10 个灰盒脚本已写完(见下表)
-- 工程本体待建:模板 2D(cn.tuanjie.template.2d),建到 `unity_new` 后并入本目录(步骤见 new-machine-setup.md 第 4 节)
-- 灰盒场景待生成:菜单 `Tools/Patch47/生成灰盒场景`,产物 `Assets/Scenes/Ch1_Greybox.unity`
+- 工程本体已建立(2026-09-04,2D 模板并入本目录,详见 new-machine-setup.md 第 4 节)
+- `Assets/Scripts/` 12 个灰盒脚本已写完(见下表)
+- 灰盒场景已生成:`Assets/Scenes/Ch1_Greybox.unity`;补丁台交互(2026-09-05)入库后需重跑菜单 `Tools/Patch47/生成灰盒场景` 覆盖生效
 
 ## 命令行批处理
 
@@ -31,6 +31,6 @@ WebGL 基线体积测试(M1 加项,需 WebGL 模块):
 |---|---|
 | GameFramework/ | GameConfig(配置)、ApiModels(接口 DTO)、ApiClient(/api/session、/api/chat,超时 8s 走兜底) |
 | Dialogue/ | DialogueManager(编排)、Typewriter(本地打字机)、FallbackDialogue(离线兜底台词,Resources 加载) |
-| Patch/ | PatchAvatar(方块+闪烁光标,情绪→颜色/频率) |
+| Patch/ | PatchAvatar(方块+闪烁光标,情绪→颜色/频率)、PatchBug(bug 物体:红光脉冲/点击开补丁台/修复反馈)、PatchBoard+PatchWireDrag(补丁台「接线」谜题交互) |
 | UI/ | QuickReplyRow(3 个快捷回复按钮) |
 | Editor/ | GreyboxSceneBuilder(程序化生成灰盒场景)、WebGLBaselineBuilder(WebGL 基线构建+体积报告) |
