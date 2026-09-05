@@ -34,8 +34,13 @@ async function post(path, body) {
   console.log('7) 真实修复事件:', evt.status, 'stage=' + evt.json.stage, 'trust=' + evt.json.trust, '(期望 ch1_done, trust 50+5+对话加成)');
 
   const evt2 = await post('/api/event', { sessionId: created.json.sessionId, type: 'bug_fixed', bugId: 'Bug_StartButton' });
-  console.log('8) 重复修复事件:', evt2.json.stage, 'trust=' + evt2.json.trust, '(阶段不再推进,但信任仍+5?观察幂等性)');
+  console.log('8) 重复修复事件:', evt2.json.stage, 'trust=' + evt2.json.trust, '(幂等:阶段不变,信任不再+5)');
 
   const chat3 = await post('/api/chat', { sessionId: created.json.sessionId, text: '按钮活过来了!' });
   console.log('9) 修复后对话:', chat3.json.stage, chat3.json.trust, '(ch1_done 内正常聊天)');
+
+  // 10) 跳过对话直接修 bug(2026-09-06 用户实测暴露的阶段卡死)——必须直接到 ch1_done
+  const skip = await post('/api/session', {});
+  const skipFix = await post('/api/event', { sessionId: skip.json.sessionId, type: 'bug_fixed', bugId: 'Bug_StartButton' });
+  console.log('10) 跳过对话直接修:', skipFix.json.stage, 'trust=' + skipFix.json.trust, '(期望 ch1_done, trust 55)');
 })();

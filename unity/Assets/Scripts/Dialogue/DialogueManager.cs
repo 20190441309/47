@@ -225,10 +225,11 @@ namespace Patch47.Dialogue
             ShowReply(FallbackDialogue.NextReply(stage), "happy"); // 修复后帕奇的庆祝台词
         }
 
-        /// 离线镜像:ch1_puzzle → ch1_done + 信任 +5(与后端 applyGameEvent 规则一致)
+        /// 离线镜像:ch1_arrival/ch1_puzzle → ch1_done + 信任 +5(与后端 applyGameEvent 一致,
+        /// 兜住「跳过对话直接修」的路径,离线也不能卡阶段)
         private void ApplyLocalFix(string bugId)
         {
-            if (stage == "ch1_puzzle")
+            if (stage == "ch1_puzzle" || stage == "ch1_arrival")
             {
                 stage = "ch1_done";
                 RefreshQuickReplies();

@@ -142,7 +142,8 @@ const FIX_TRUST_DELTA = 5;
 
 const EVENT_TRANSITIONS = {
   bug_fixed: {
-    ch1_puzzle: 'ch1_done', // 第 1 章按钮修复;后续章节多 bug 时按 bugId 细分(此处单 bug,按阶段即可)
+    ch1_arrival: 'ch1_done', // 玩家跳过对话直接修 bug(看到红的就点)——直接跳完成,不能卡死
+    ch1_puzzle: 'ch1_done',  // 正常路径:聊到按钮再修;后续章节多 bug 时按 bugId 细分
   },
 };
 
