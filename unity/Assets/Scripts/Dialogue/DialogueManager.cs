@@ -29,6 +29,32 @@ namespace Patch47.Dialogue
         private bool offline;
         private bool busy;
 
+        /// UI 事件运行时自愈接线(2026-09-06):场景里序列化的只有对象引用——构建器的
+        /// 运行时 AddListener 不进场景文件,编辑器域重载(脚本重编译)会静默清空,
+        /// 曾导致发送/快捷回复/重连按钮全部失灵。每次 Play 重绑 + 幂等防重复订阅。
+        private void Awake()
+        {
+            if (sendButton != null)
+            {
+                sendButton.onClick.RemoveAllListeners();
+                sendButton.onClick.AddListener(OnSend);
+            }
+            if (offlineIndicator != null)
+            {
+                var offlineButton = offlineIndicator.GetComponent<Button>();
+                if (offlineButton != null)
+                {
+                    offlineButton.onClick.RemoveAllListeners();
+                    offlineButton.onClick.AddListener(OnReconnect);
+                }
+            }
+            if (quickReplies != null)
+            {
+                quickReplies.Clicked -= OnQuickReply;
+                quickReplies.Clicked += OnQuickReply;
+            }
+        }
+
         private IEnumerator Start()
         {
             SetInteractable(false);

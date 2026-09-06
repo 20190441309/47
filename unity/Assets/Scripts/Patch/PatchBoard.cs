@@ -21,6 +21,24 @@ namespace Patch47.Patch
 
         public bool IsOpen { get { return gameObject.activeSelf; } }
 
+        /// 运行时自愈接线:遮罩/关闭按钮的监听若由构建器 AddListener 则不序列化、
+        /// 域重载即清空(2026-09-06 实测按钮失灵);根物体初始 inactive,
+        /// Awake 在首次 Open 激活时才执行,恰好在玩家能点到按钮之前。
+        private void Awake()
+        {
+            var maskButton = GetComponent<Button>();
+            if (maskButton != null)
+            {
+                maskButton.onClick.RemoveAllListeners();
+                maskButton.onClick.AddListener(Close); // 点遮罩空白处关闭
+            }
+            if (closeButton != null)
+            {
+                closeButton.onClick.RemoveAllListeners();
+                closeButton.onClick.AddListener(Close);
+            }
+        }
+
         public void Open(PatchBug bug)
         {
             if (IsOpen) return;

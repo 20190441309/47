@@ -223,10 +223,9 @@ namespace Patch47.EditorTools
             manager.stageLabel = stageLabel;
             manager.offlineIndicator = offlineGo;
 
-            send.onClick.AddListener(manager.OnSend);
-            offlineGo.GetComponent<Button>().onClick.AddListener(manager.OnReconnect); // 手动重连(M2)
-            quickReplyRow.Bind();
-            quickReplyRow.Clicked += manager.OnQuickReply;
+            // UI 事件接线全部由组件运行时自愈(QuickReplyRow/PatchBoard/DialogueManager 的 Awake):
+            // 构建器时代的运行时 AddListener 不序列化、域重载(脚本重编译)即被静默清空,
+            // 2026-09-06 实测曾致按钮全死;这里只负责注入序列化字段引用。
             bugController.dialogue = manager; // 修复事件 → 对话编排器上报 /api/event
 
             var board = BuildPatchBoard(canvasGo.transform);

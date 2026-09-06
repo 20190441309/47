@@ -23,13 +23,21 @@ namespace Patch47.UI
             }
         }
 
-        /// 由场景构建器调用一次,绑定点击事件。
+        /// 运行时自愈接线:点击监听必须每次 Play 重建——场景构建器的运行时 AddListener
+        /// 不进序列化,编辑器域重载(脚本重编译)会静默清空(2026-09-06 实测按钮全死)。
+        private void Awake()
+        {
+            Bind();
+        }
+
+        /// 绑定点击事件(幂等,可重复调用;先清后绑,防域重载残留或重复订阅)。
         public void Bind()
         {
             for (var i = 0; i < buttons.Length; i++)
             {
                 if (buttons[i] == null) continue;
                 var index = i;
+                buttons[i].onClick.RemoveAllListeners();
                 buttons[i].onClick.AddListener(() => Clicked?.Invoke(index));
             }
         }
